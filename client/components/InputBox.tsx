@@ -6,10 +6,15 @@ import { Input } from "@/components/ui/input";
 
 interface InputBoxProps {
   onSend: (message: string) => void;
+  onSkip?: () => void;
   disabled?: boolean;
 }
 
-export function InputBox({ onSend, disabled }: InputBoxProps) {
+export function InputBox({
+  onSend,
+  onSkip,
+  disabled,
+}: InputBoxProps) {
   const [input, setInput] = useState("");
 
   const handleSend = () => {
@@ -19,7 +24,16 @@ export function InputBox({ onSend, disabled }: InputBoxProps) {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSkip = () => {
+    if (onSkip) {
+      onSkip();
+      setInput("");
+    }
+  };
+
+  const handleKeyPress = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -34,13 +48,28 @@ export function InputBox({ onSend, disabled }: InputBoxProps) {
           placeholder="Type your answer..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
           disabled={disabled}
           className="flex-1"
         />
-        <Button onClick={handleSend} disabled={disabled || !input.trim()}>
+
+        <Button
+          onClick={handleSend}
+          disabled={disabled || !input.trim()}
+        >
           Send
         </Button>
+
+        {onSkip && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSkip}
+            disabled={disabled}
+          >
+            Skip
+          </Button>
+        )}
       </div>
     </div>
   );

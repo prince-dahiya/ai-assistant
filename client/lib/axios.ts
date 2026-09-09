@@ -5,7 +5,7 @@ const axiosInstance = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 15000,
+    timeout: 45000,
 });
 
 // ── Request interceptor — attach token automatically ──────

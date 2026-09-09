@@ -6,6 +6,32 @@ import { Card } from "@/components/ui/card";
 import { getToken } from "@/lib/auth";
 import { useEffect, useState } from "react";
 
+// ── Static content (module-level so references stay stable across renders) ──
+
+const testimonials = [
+  {
+    name: "Rohan Sharma",
+    role: "Frontend Developer @ Flipkart",
+    avatar: "RS",
+    text: "After 10 mock sessions, I walked into my Flipkart interview feeling genuinely prepared. The AI's feedback on my React answers was shockingly accurate.",
+    rating: 5,
+  },
+  {
+    name: "Priya Nair",
+    role: "Data Scientist @ Razorpay",
+    avatar: "PN",
+    text: "I used to ramble in interviews. The AI flagged this after my second session and I actively worked on it. Got the offer after targeting exactly those weak spots.",
+    rating: 5,
+  },
+  {
+    name: "Arjun Mehta",
+    role: "DevOps Engineer @ Infosys",
+    avatar: "AM",
+    text: "The system design questions were spot-on for what I faced in actual interviews. The follow-up questions especially felt like a real technical round.",
+    rating: 5,
+  },
+];
+
 export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
@@ -137,30 +163,6 @@ export default function Home() {
     },
   ];
 
-  const testimonials = [
-    {
-      name: "Rohan Sharma",
-      role: "Frontend Developer @ Flipkart",
-      avatar: "RS",
-      text: "After 10 mock sessions, I walked into my Flipkart interview feeling genuinely prepared. The AI's feedback on my React answers was shockingly accurate.",
-      rating: 5,
-    },
-    {
-      name: "Priya Nair",
-      role: "Data Scientist @ Razorpay",
-      avatar: "PN",
-      text: "I used to ramble in interviews. The AI flagged this after my second session and I actively worked on it. Got the offer after targeting exactly those weak spots.",
-      rating: 5,
-    },
-    {
-      name: "Arjun Mehta",
-      role: "DevOps Engineer @ Infosys",
-      avatar: "AM",
-      text: "The system design questions were spot-on for what I faced in actual interviews. The follow-up questions especially felt like a real technical round.",
-      rating: 5,
-    },
-  ];
-
   const comparisonPoints = [
     { label: "Available 24/7", ai: true, traditional: false },
     { label: "Instant feedback", ai: true, traditional: false },
@@ -276,7 +278,8 @@ export default function Home() {
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Most candidates fail not because they lack knowledge — but because
-            they've never practiced translating that knowledge under pressure.
+            they&apos;ve never practiced translating that knowledge under
+            pressure.
           </p>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
@@ -483,17 +486,17 @@ export default function Home() {
               </p>
             </div>
             <p className="font-semibold text-foreground text-lg mb-4">
-              "Explain the difference between `useEffect` and `useLayoutEffect`
-              in React. When would you use each?"
+              &ldquo;Explain the difference between `useEffect` and
+              `useLayoutEffect` in React. When would you use each?&rdquo;
             </p>
             <div className="bg-muted/30 rounded-lg p-4">
               <p className="text-xs font-semibold text-muted-foreground mb-2">
                 Your Answer
               </p>
               <p className="text-sm text-foreground/80 italic">
-                "useEffect runs after the render is painted to the screen, while
-                useLayoutEffect runs synchronously after all DOM mutations but
-                before the browser paints..."
+                &ldquo;useEffect runs after the render is painted to the
+                screen, while useLayoutEffect runs synchronously after all DOM
+                mutations but before the browser paints...&rdquo;
               </p>
             </div>
           </Card>
@@ -533,8 +536,8 @@ export default function Home() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Missed the performance implication: useLayoutEffect can cause
-                  visual lag if overused. Didn't mention accessibility-related
-                  animation use cases.
+                  visual lag if overused. Didn&apos;t mention
+                  accessibility-related animation use cases.
                 </p>
               </div>
               <div className="border-t border-border pt-3">
@@ -542,8 +545,8 @@ export default function Home() {
                   🔁 Follow-up Question
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  "Can overusing useLayoutEffect affect perceived performance?
-                  How would you debug it?"
+                  &ldquo;Can overusing useLayoutEffect affect perceived
+                  performance? How would you debug it?&rdquo;
                 </p>
               </div>
             </div>
@@ -660,7 +663,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed italic">
-                "{t.text}"
+                &ldquo;{t.text}&rdquo;
               </p>
             </Card>
           ))}
