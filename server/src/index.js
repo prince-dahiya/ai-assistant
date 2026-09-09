@@ -20,26 +20,20 @@ const User = require("./models/User.js");
 
 const ensureAdminAccount = async () => {
   try {
-    const adminEmail = (
-      process.env.ADMIN_EMAIL ||
-      "dahiyapri000@gmail.com"
-    )
-      .toLowerCase()
-      .trim();
+    const adminEmail = (process.env.ADMIN_EMAIL || "").toLowerCase().trim();
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminName = process.env.ADMIN_NAME || "Administrator";
 
-    const adminPassword =
-      process.env.ADMIN_PASSWORD ||
-      "Prince@321";
-
-    const adminName =
-      process.env.ADMIN_NAME ||
-      "Administrator";
+    if (!adminEmail || !adminPassword) {
+      console.warn(
+        "⚠️ ADMIN_EMAIL / ADMIN_PASSWORD not set in environment variables — skipping admin bootstrap."
+      );
+      return null;
+    }
 
     // IMPORTANT:
     // Get the admin exactly like we get a normal User.
-    let admin = await User.findOne({
-      email: adminEmail,
-    });
+    let admin = await User.findOne({ email: adminEmail });
 
     // =================================================
     // CREATE ADMIN
@@ -52,26 +46,11 @@ const ensureAdminAccount = async () => {
         password: adminPassword,
         role: "Administrator",
         isEmailVerified: true,
-
-        passwordChangedAt:
-          new Date(),
-
-        passwordExpiresAt:
-          new Date(
-            Date.now() +
-              90 *
-                24 *
-                60 *
-                60 *
-                1000
-          ),
+        passwordChangedAt: new Date(),
+        passwordExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       });
 
-      console.log(
-        "✅ Administrator account created:",
-        admin.email
-      );
-
+      console.log("✅ Administrator account created:", admin.email);
       return admin;
     }
 
@@ -81,22 +60,13 @@ const ensureAdminAccount = async () => {
 
     let changed = false;
 
-    if (
-      admin.role !==
-      "Administrator"
-    ) {
-      admin.role =
-        "Administrator";
-
+    if (admin.role !== "Administrator") {
+      admin.role = "Administrator";
       changed = true;
     }
 
-    if (
-      !admin.isEmailVerified
-    ) {
-      admin.isEmailVerified =
-        true;
-
+    if (!admin.isEmailVerified) {
+      admin.isEmailVerified = true;
       changed = true;
     }
 
@@ -104,18 +74,10 @@ const ensureAdminAccount = async () => {
       await admin.save();
     }
 
-    console.log(
-      "✅ Administrator account ready:",
-      admin.email
-    );
-
+    console.log("✅ Administrator account ready:", admin.email);
     return admin;
   } catch (error) {
-    console.error(
-      "❌ Failed to create administrator account:",
-      error
-    );
-
+    console.error("❌ Failed to create administrator account:", error);
     throw error;
   }
 };
@@ -152,103 +114,80 @@ app.use(
 // ROUTES
 // =====================================================
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-app.use(
-  "/api/interviews",
-  interviewRoutes
-);
-
-app.use(
-  "/api/resume",
-  resumeRoutes
-);
-
-app.use(
-  "/api/placement-readiness",
-  placementReadinessRoutes
-);
-
-app.use(
-  "/api/challenges",
-  challengeRoutes
-);
-
-app.use(
-  "/api/admin",
-  adminRoutes
-);
+app.use("/api/auth", authRoutes);
+app.use("/api/interviews", interviewRoutes);
+app.use("/api/resume", resumeRoutes);
+app.use("/api/placement-readiness", placementReadinessRoutes);
+app.use("/api/challenges", challengeRoutes);
+app.use("/api/admin", adminRoutes);
 
 // =====================================================
 // HEALTH CHECK
 // =====================================================
 
 app.get("/", (req, res) => {
-  res.send(
-    "Backend is running!"
-  );
+  res.send("Backend is running!");
+});
+
+// =====================================================
+// DB CONNECTION (serverless-safe)
+// =====================================================
+// On Vercel, there's no persistent startup phase like a normal
+// server — each request may hit a fresh function instance. This
+// makes sure the DB connects (once) before any route runs, whether
+// you're on Vercel or running locally.
+
+let dbReady = null;
+const initDB = async () => {
+  if (!dbReady) {
+    dbReady = connectDB().then(() => ensureAdminAccount());
+  }
+  return dbReady;
+};
+
+app.use(async (req, res, next) => {
+  try {
+    await initDB();
+    next();
+  } catch (error) {
+    console.error("❌ DB init failed:", error);
+    res.status(500).json({ message: "Database connection failed" });
+  }
 });
 
 // =====================================================
 // ERROR HANDLER
 // =====================================================
 
-app.use(
-  (
-    err,
-    req,
-    res,
-    next
-  ) => {
-    console.error(
-      err.stack
-    );
+app.use((err, req, res, next) => {
+  console.error(err.stack);
 
-    res.status(
-      err.status || 500
-    ).json({
-      message:
-        err.message ||
-        "Internal server error",
-    });
-  }
-);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
+  });
+});
 
 // =====================================================
-// START SERVER
+// START SERVER (local dev only)
 // =====================================================
 
-const PORT =
-  process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
-const startServer =
-  async () => {
-    try {
-      // Wait for MongoDB first.
-      await connectDB();
-
-      // Make sure admin exists.
-      await ensureAdminAccount();
-
-      app.listen(
-        PORT,
-        () => {
-          console.log(
-            `🚀 Server running on http://localhost:${PORT}`
-          );
-        }
-      );
-    } catch (error) {
-      console.error(
-        "❌ Server startup failed:",
-        error
-      );
-
+if (require.main === module) {
+  // Runs only when you do `node index.js` locally.
+  // On Vercel this file is imported as a module instead,
+  // so this block is skipped and module.exports is used.
+  initDB()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+      });
+    })
+    .catch((error) => {
+      console.error("❌ Server startup failed:", error);
       process.exit(1);
-    }
-  };
+    });
+}
 
-startServer();
+// Vercel imports this export and wraps it as a serverless function.
+module.exports = app;
