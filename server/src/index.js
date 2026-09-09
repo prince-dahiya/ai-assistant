@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-
 const connectDB = require("./config/db.js");
-
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth.js");
@@ -20,10 +18,14 @@ const User = require("./models/User.js");
 
 const ensureAdminAccount = async () => {
   try {
-    const adminEmail = (process.env.ADMIN_EMAIL || "").toLowerCase().trim();
+    const adminEmail = (process.env.ADMIN_EMAIL || "")
+      .toLowerCase()
+      .trim();
+
     const adminPassword = process.env.ADMIN_PASSWORD;
-    const adminName = process.env.ADMIN_NAME || "Administrator";
- 
+    const adminName =
+      process.env.ADMIN_NAME || "Administrator";
+
     if (!adminEmail || !adminPassword) {
       console.warn(
         "⚠️ ADMIN_EMAIL / ADMIN_PASSWORD not set in environment variables — skipping admin bootstrap."
@@ -31,8 +33,7 @@ const ensureAdminAccount = async () => {
       return null;
     }
 
-    // IMPORTANT:
-    // Get the admin exactly like we get a normal User.
+    // Get the admin exactly like a normal User
     let admin = await User.findOne({
       email: adminEmail,
     });
@@ -48,19 +49,15 @@ const ensureAdminAccount = async () => {
         password: adminPassword,
         role: "Administrator",
         isEmailVerified: true,
-
-        passwordChangedAt:
-          new Date(),
-
-        passwordExpiresAt:
-          new Date(
-            Date.now() +
-              90 *
-                24 *
-                60 *
-                60 *
-                1000
-          ),
+        passwordChangedAt: new Date(),
+        passwordExpiresAt: new Date(
+          Date.now() +
+            90 *
+              24 *
+              60 *
+              60 *
+              1000
+        ),
       });
 
       console.log(
@@ -77,22 +74,13 @@ const ensureAdminAccount = async () => {
 
     let changed = false;
 
-    if (
-      admin.role !==
-      "Administrator"
-    ) {
-      admin.role =
-        "Administrator";
-
+    if (admin.role !== "Administrator") {
+      admin.role = "Administrator";
       changed = true;
     }
 
-    if (
-      !admin.isEmailVerified
-    ) {
-      admin.isEmailVerified =
-        true;
-
+    if (!admin.isEmailVerified) {
+      admin.isEmailVerified = true;
       changed = true;
     }
 
@@ -145,6 +133,50 @@ app.use(
 );
 
 // =====================================================
+// DATABASE + ADMIN INITIALIZATION
+// =====================================================
+
+let initializationPromise = null;
+
+const initializeServer = async () => {
+  if (!initializationPromise) {
+    initializationPromise = (async () => {
+      await connectDB();
+      await ensureAdminAccount();
+
+      console.log(
+        "✅ Database and admin initialization complete"
+      );
+    })().catch((error) => {
+      initializationPromise = null;
+      throw error;
+    });
+  }
+
+  return initializationPromise;
+};
+
+// =====================================================
+// INITIALIZE BEFORE API REQUESTS
+// =====================================================
+
+app.use(async (req, res, next) => {
+  try {
+    await initializeServer();
+    next();
+  } catch (error) {
+    console.error(
+      "❌ Server initialization failed:",
+      error
+    );
+
+    res.status(500).json({
+      message: "Server initialization failed",
+    });
+  }
+});
+
+// =====================================================
 // ROUTES
 // =====================================================
 
@@ -183,7 +215,7 @@ app.use(
 // =====================================================
 
 app.get("/", (req, res) => {
-  res.send(
+  res.status(200).send(
     "Backend is running!"
   );
 });
@@ -200,7 +232,7 @@ app.use(
     next
   ) => {
     console.error(
-      err.stack
+      err.stack || err
     );
 
     res.status(
@@ -214,37 +246,7 @@ app.use(
 );
 
 // =====================================================
-// START SERVER
+// VERCEL EXPORT
 // =====================================================
 
-const PORT =
-  process.env.PORT || 5000;
-
-const startServer =
-  async () => {
-    try {
-      // Wait for MongoDB first.
-      await connectDB();
-
-      // Make sure admin exists.
-      await ensureAdminAccount();
-
-      app.listen(
-        PORT,
-        () => {
-          console.log(
-            `🚀 Server running on http://localhost:${PORT}`
-          );
-        }
-      );
-    } catch (error) {
-      console.error(
-        "❌ Server startup failed:",
-        error
-      );
-
-      process.exit(1);
-    }
-  };
-
-startServer();
+module.exports = app;
